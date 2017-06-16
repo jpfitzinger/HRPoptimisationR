@@ -1,0 +1,117 @@
+---
+title: "README"
+output: html_document
+---
+
+Aim of this folder is to explore the Hierarchial Risk Partiy approach to portfolio optimization.
+
+Paper: https://papers.ssrn.com/sol3/papers.cfm?abstract_id=2708678
+
+R Code walk through: http://gallery.rcpp.org/articles/hierarchical-risk-parity/
+
+
+```{r}
+# Ensure the following packages are installed ====================
+install.packages("tidyverse")
+install.packages("PerformanceAnalytics")
+install.packages("devtools")
+library(devtools)
+install_github("Nicktz/Dplyr2Xts")
+install.packages("Rcpp")
+install.packages("RcppArmadillo")
+
+```
+
+
+```{r}
+
+library(tidyverse)
+library(PerformanceAnalytics)
+library(Dplyr2Xts)
+library(Rcpp)
+library(RcppArmadillo)
+Root <- getwd()
+# Load Cpp files:====================
+l <- list.files(paste0(Root, "/Code"), full.names = TRUE )
+sapply(FUN = Rcpp::sourceCpp, X = l)
+
+```
+
+
+
+# Step 1: Load Toy returns data
+
+```{r}
+data("edhec")
+datwide <- edhec %>% Xts2Dplyr()
+
+CorMat <- 
+  cor(datwide[-1], use = "pairwise.complete.obs") 
+CovMat <- 
+  cov(datwide[-1], use = "pairwise.complete.obs") 
+
+
+```
+
+
+Now see this set of slides explaining the process more easily: 
+https://poseidon01.ssrn.com/delivery.php?ID=712085084074106099027084030066071002122081004009095091026103081078100115069009007026018029054101050127023023094092101125003071058082046034028110102099101019098010039021095117067125006091127091121115107029112090072118067092005077096024110110024106115&EXT=pdf
+
+
+# Step 2: Rowwise and Elementwise distance matrix calculation:
+
+
+```{r}
+
+distanceElementWise <- distanceMatrix_elementwise(CorMat)
+
+distanceRowwise <- distanceMatrix_rowwise(CorMat)
+
+```
+
+
+
+# Step 3: Cluster Generation
+
+```{r}
+
+Cl <- clusterMatrix(CorMat)
+
+```
+
+
+
+# Step 4: Quasi-Diagonalization
+
+
+```{r}
+
+CLIndex <- clusterIndex(clusterMatrix = Cl, MAT_COV = CovMat)
+
+QuasiDiagMatrix <- quasiDiag(MAT_COV = CovMat, assetIndex = CLIndex)
+
+```
+
+
+# Step 5: Weighting Generation
+
+
+```{r}
+
+
+WeightVector <- weightAllocation(quasiDiagMatrix = QuasiDiagMatrix, assetIndex = CLIndex)
+
+colnames(WeightVector) <- TickerstoUse
+
+WeightVector %>% tbl_df() %>% gather(Ticker, Weight) %>% arrange(desc(Weight))
+
+```
+
+### Note: This Weightvector is as of yet unconstrained...
+
+TODO:
+
+Build a more flexible package in R to do HRP optimization.
+
+
+
