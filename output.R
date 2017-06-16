@@ -4,7 +4,7 @@
 # Author: Johann Pfitzinger
 
 # Notes:
-# The below provides exact replication of HRP, Mean-Variance, Minimum Variance,
+# The below provides an exact replication of HRP, Mean-Variance, Minimum Variance,
 # Inverse Variance, and Equal weighting optimisation methods.
 # No replication has been provided for CLA minimum variance optimisation.
 # Package "tawny" used to obtain shrinkage estimates of the covariance matrix.
@@ -31,7 +31,7 @@
       # Calculate Return
       rets <- diff(log(prices.data))
       # Export for comparison with Python
-      write.csv(as.data.frame(rets), "rets.csv")
+      write.csv(as.data.frame(rets), "./Data/rets.csv")
       #python.load(HRP.py)
 
       # Fetch functions library
@@ -40,7 +40,7 @@
 #--------------------------------------------------------------------------
 # Optimisation Function
       
-# This function generates an optimal portfolio. The function take the following args:
+# This function generates optimal portfolio weights. The function take the following args:
 # - x                    = zoo object of returns
 # - calc_int             = period length of historicals used to calculate risk parameters
 # - rebal_per            = frequency of rebalancing, c("days","months","quarters","years")
@@ -51,9 +51,10 @@
 #   - Equal              = Equal weighting
 #   - HRP / rHRP         = Hierarchical Risk Parity
 #   Robust covariance matrices are calculated using the "tawny" package (not OAS used by Wiecki)
+#   Multiple methods can be passed to obtain comparisons.
 #--------------------------------------------------------------------------
 
-      p <- optFx(rets, calc_int = 252, rebal_per = "months", c("HRP","MVO"))
+      p <- optFx(rets, calc_int = 252, rebal_per = "months", methods = c("HRP","MVO"))
   
 #--------------------------------------------------------------------------
 # Plots to replicate Thomas Wiecki (Python code)
@@ -66,11 +67,11 @@
       
       # Cumulative log returns
       
-      cl.ret <- p$port_returns %>% log1p %>% cumsum %>% melt
-      cl.ret$date <- rownames(p$port_returns) %>% as.Date %>% rep(ncol(p$port_returns))
-      cl.ret$label <- sapply(as.character(cl.ret$variable), function(x) opt_methods[[x]][1])
+      l.rets <- p$port_returns %>% log1p %>% cumsum %>% melt
+      l.rets$date <- rownames(p$port_returns) %>% as.Date %>% rep(ncol(p$port_returns))
+      l.rets$label <- sapply(as.character(l.rets$variable), function(x) opt_methods[[x]][1])
       
-      ggplot(data = cl.ret, aes(x = date)) + 
+      ggplot(data = l.rets, aes(x = date)) + 
         geom_line(aes(y = value, color = label)) +
         scale_color_brewer(palette = "Set1", name = NULL) +
         labs(x = NULL, y = "Cumulative Log Returns") + 
