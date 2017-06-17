@@ -12,14 +12,19 @@
 # direct implementation exists in R. Other options can be explored in future.
 #--------------------------------------------------------------------------
 
-      pacman::p_load(dplyr, zoo, reshape2, ggplot2, corrplot, quantmod, tawny)
+      pacman::p_load(dplyr, quadprog, zoo, reshape2, ggplot2, corrplot, quantmod, tawny)
+      
+      # Fetch functions library
+      source("functions.R")
+      source("./Misc/multiplot.R")
 
 #--------------------------------------------------------------------------
 # Import Data
 #--------------------------------------------------------------------------
 
       # Fetch some JSE shares (customizable). Currently using Google Finance.
-      symbols <- c("JSE:AMS","JSE:CFR","JSE:FSR","JSE:KIO","JSE:MTN","JSE:NPN","JSE:SAB","JSE:SBK","JSE:SOL","JSE:VOD")
+      symbols <- c("JSE:AMS","JSE:EXX","JSE:FSR","JSE:KIO","JSE:MTN","JSE:NPN","JSE:INL","JSE:SBK","JSE:SOL","JSE:ARI",
+                   "JSE:ABSP","JSE:SLM","JSE:SHP","JSE:REM","JSE:NED","JSE:APN","JSE:BVT","JSE:ANG","JSE:WHL","JSE:TBS")
       getSymbols(symbols, src="google", return.class = "zoo")
       # Merge closing prices
       prices.data <- get(symbols[1])[,4]
@@ -33,9 +38,6 @@
       # Export for comparison with Python
       write.csv(as.data.frame(rets), "./Data/rets.csv")
       #python.load(HRP.py)
-
-      # Fetch functions library
-      source("functions.R")
 
 #--------------------------------------------------------------------------
 # Optimisation Function
@@ -54,7 +56,10 @@
 #   Multiple methods can be passed to obtain comparisons.
 #--------------------------------------------------------------------------
 
-      p <- optFx(rets, calc_int = 252, rebal_per = "months", methods = c("HRP","MVO"))
+      p <- optFx(rets, calc_int = 252, rebal_per = "months")  # Computes all methods
+      p <- optFx(rets, calc_int = 252, rebal_per = "months", methods = c("HRP","MVO","minVar","invVar","Equal"))  # Primary methods
+      p <- optFx(rets, calc_int = 252, rebal_per = "months", methods = c("HRP","rHRP"))   # HRP comparison to robust
+      p <- optFx(rets, calc_int = 252, rebal_per = "months", methods = c("HRP","MVO"))   # HRP comparison to robust and MVO
   
 #--------------------------------------------------------------------------
 # Plots to replicate Thomas Wiecki (Python code)
@@ -62,7 +67,7 @@
 
       # Correlation Plot & Clustering
       
-      cor(prices.data) %>% corrplot(method = "ellipse")
+      cor(prices.data) %>% corrplot(order="hclust", hclust.method = "single", addrect=3)
       cor(prices.data) %>% correlDist %>% dist %>% hclust("single") %>% plot
       
       # Cumulative log returns
@@ -71,23 +76,38 @@
       l.rets$date <- rownames(p$port_returns) %>% as.Date %>% rep(ncol(p$port_returns))
       l.rets$label <- sapply(as.character(l.rets$variable), function(x) opt_methods[[x]][1])
       
-      ggplot(data = l.rets, aes(x = date)) + 
+      plot.cret <- ggplot(data = l.rets, aes(x = date)) + 
         geom_line(aes(y = value, color = label)) +
         scale_color_brewer(palette = "Set1", name = NULL) +
         labs(x = NULL, y = "Cumulative Log Returns") + 
         scale_y_continuous(breaks = seq(-2,2,0.25)) +
-        theme_bw()
+        theme_bw() + theme(legend.position = "top")
         
       # Sharpe Ratio & Volatility
       
       sr <- colMeans(p$port_returns)*252 / (apply(p$port_returns,2,sd)*sqrt(252))
-      ggplot() + geom_col(aes(sapply(as.character(names(sr)), function(x) opt_methods[[x]][1]), sr, fill = names(sr))) +
+      plot.sr <- ggplot() + geom_col(aes(sapply(as.character(names(sr)), function(x) opt_methods[[x]][1]), sr, fill = names(sr))) +
         labs(x = NULL, y = "Sharpe Ratio") +
         scale_fill_brewer(palette = "Set1") +
         theme_bw() + theme(legend.position = "none")
       
       vol <- apply(p$port_returns,2,sd)*sqrt(252)
-      ggplot() + geom_col(aes(sapply(as.character(names(vol)), function(x) opt_methods[[x]][1]), vol, fill = names(vol))) +
+      plot.vol <- ggplot() + geom_col(aes(sapply(as.character(names(vol)), function(x) opt_methods[[x]][1]), vol, fill = names(vol))) +
         labs(x = NULL, y = "Portfolio Volatility") +
         scale_fill_brewer(palette = "Set1") +
         theme_bw() + theme(legend.position = "none")
+      
+      # Diversification (HHI)
+      p.hhi <- apply((p$weights*100)^2, c(1,3), sum) %>% melt
+      p.hhi$date <- p.hhi$Var2 %>% as.Date
+      p.hhi$label <- sapply(as.character(p.hhi$Var1), function(x) opt_methods[[x]][1])
+      
+      plot.hhi <- ggplot(data = p.hhi, aes(x = date)) + 
+        geom_line(aes(y = value, color = label)) +
+        scale_color_brewer(palette = "Set1", name = NULL) +
+        labs(x = NULL, y = "Diversification (HHI on weights)") + 
+        scale_y_continuous(breaks = seq(0,10000,1000)) +
+        theme_bw() + theme(legend.position = "top")
+      
+      multiplot(plot.cret, plot.hhi, plot.sr, plot.vol, layout = matrix(c(1,2,3,4), nrow=2, byrow=TRUE), wid = 100, hei = 100)
+      
