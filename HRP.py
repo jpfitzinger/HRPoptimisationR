@@ -582,7 +582,7 @@ from pandas import read_csv
 #rets = prices.pct_change()
 #rets = rets[np.isfinite(rets['BAC US Equity'])]
 
-rets = read_csv('/home/johann/Documents/HRP_optim_R/rets.csv', index_col = 0, parse_dates = True, infer_datetime_format = True)
+rets = read_csv('/home/johann/Documents/HRP_optim_R/Data/rets.csv', index_col = 0, parse_dates = True, infer_datetime_format = True)
 symbols = list(rets.columns)
 
 

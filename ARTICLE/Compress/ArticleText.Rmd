@@ -1,0 +1,94 @@
+---
+title: "Volatility Spillovers to SA Financial Markets"
+author: "Johann Pfitzinger"
+date: "12 June 2017"
+output: html_document
+bibliography: Tex/ref.bib
+citation-style: Tex/style2.csl
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, eval = TRUE, error = FALSE, warning = FALSE, message = FALSE, results = "asis")
+```
+```{r plots}
+load("GARCH_base.RData")
+#load("GARCH_ar.RData")
+#load("GARCH_22.RData")
+source("./Code/plots.R")
+source("./Code/multiplot.R")
+```
+
+The ECB's Chief Economist recently highlighted the changing patterns of international capital flows, and the growing opposition to the era of global financial integration [@praet_future_2016]. In fact, investment flows have been identified as a major driver of the spread of global instability during and after the 2007 Financial Crisis --- even triggering reviews of axiomatic economic precepts such as the policy trilemma, or capital liberalization (see for instance @rey_dilemma_2015).
+  
+In the related literature, a conceptual polarity has evolved between emerging markets, subject to exogenous contagion effects, and developed financial centers, which have been the primary source of financial instability. The integration of emerging markets into the global strategic asset allocation exposes financial systems in countries like South Africa to idiosyncratic shocks in capital flows, often decoupled from domestic fundamentals. In the analysis that follows, I take a closer look at the overall exposure of the South African financial system, applying an empirical measure of volatility spillovers. The scope is somewhat ambitious, but we will focus on extracting key themes rather than discussing the many nuances emerging from the data. A number of highly cogent economic trends emerge: (i) exposure is positively related to the risk of the asset class; (ii) in geographical terms, spillovers emanate most strongly from the US and UK; (iii) real spillovers follow a similar pattern as in financial markets, but are quantitatively far weaker; (iv) quantitative easing by the US Federal Reserve (Fed) and the European Central Bank (ECB) is a further source of significant financial market and real spillovers.
+
+# Volatility spillovers: Methodology
+
+The definition of a financial crisis as a period of heightened volatility in asset prices and economic fundamentals, suggests the use of time-dependent volatility models to capture spillovers between asset markets. While these models are unable to capture directional effects in levels, the role of volatility as a primary risk measure in financial markets, ensures that the model has direct interpretability in quantifying risk linkages. The tapering of the Federal Reserve's quantitative easing program, in particular, has focussed attention on volatility spillovers between developed and emerging markets and makes the most recent sample period particularly interesting for this kind of study [@apostolou_volatility_2017].
+
+The empirical approach taken in this paper draws on the work of @ng_volatility_2000 and @apostolou_volatility_2017, and consists of a series of two-step GARCH^[Generalized Autoregressive Conditional Heteroscedasticity.] models measuring the existence and size of volatility spillovers from 4 large financial centers (US, UK, EU and China) to South Africa, across a representative spectrum of asset classes and economic variables. The initial step estimates the conditional variance of percentage changes in the developed market variable (source variable) according to the following GARCH(1,1) model, which follows the specification first introduced by @bollerslev_generalized_1986:
+
+\begin{align}
+  r_{dev,t} &= \alpha_{dev} + \sqrt{\sigma^2_{dev,t}} z_{dev,t}, \qquad z_{dev,t} \sim N(0,1) \\
+  \sigma^2_{dev,t} &= \omega_{dev} + \beta_{dev} r^2_{dev,t-1} + \gamma_{dev} \sigma^2_{dev,t-1}
+\end{align}
+
+where $r_{dev,t}$ represents the percentage change of the source variable, $\sigma^2_{dev,t}$ is the time-dependent systematic component of the variance and $z_{dev,t}$ is the random variance component. From the estimated first step, the residual $\varepsilon_{dev,t}$ is obtained according to Equation \ref{eq_res}:
+
+\begin{align}
+  \varepsilon_{dev,t} &= r_{dev,t} - \alpha_{dev} - \sqrt{\sigma^2_{dev,t}} z_{dev,t} \label{eq_res}
+\end{align}
+
+The residual is inserted into the mean equation of a second GARCH(1,1) model, which estimates the conditional variance of the South African response variable:
+
+\begin{align}
+  r_{sa,t} &= \alpha_{sa} + \phi \varepsilon^2_{dev,t} + \sqrt{\sigma^2_{sa,t}} z_{sa,t}, \qquad z_{sa,t} \sim N(0,1) \\
+  \sigma^2_{sa,t} &= \omega_{sa} + \beta_{sa} r^2_{sa,t-1} + \gamma_{sa} \sigma^2_{sa,t-1}
+\end{align}
+
+where $r_{sa,t}$ represents the percentage change in the South African variable. Including the residual from the first step allows the model to capture the explanatory power of the developed market volatility on the South African variable. The model is re-estimated for 336 possible source-response variable combinations^[All data sourced from Bloomberg. Market indices used to proxy for the various asset classes.].
+
+The model's crucial output is the coefficient on the residual term $\phi$, which measures the strength of the volatility spillover. The spillover is deemed to exist when this parameter is statistically significant (using a Wald test). Different source-response variable combinations deliver comparable quantities as all series are measured in percentage changes.
+
+# Empirical Results
+
+Figure 1 displays the estimated values of $\phi$ for all combinations of source and response variables. Values are arranged by asset class. A positive significant value represents a volatility amplifying effect, while a negative value represents a volatility dampening effect. Spillover effects within respective asset classes are highly related, indicating a stronger differentiation by asset type than by source region. The clear distinction between the different asset classes lends support for the model specification and delivers cogent economic results. Numerous individual aspects of the estimated output would warrant discussion, however this discussion will be limited to high-level observations. 
+
+```{r, fig.align='center', fig.cap="Figure 1: Estimated strength of volatility spillovers ($\\phi$) \\label{tbl_mat}", fig.width=9.5, fig.height=6, fig.pos="H"}
+mat.main
+```
+
+## Asset class risk profile
+
+Volatility spillovers from individual asset classes are positively related to the risk profile of the respective securities. Equity spillovers feature most strongly in terms of financial market and economic spillovers, followed by real estate and bond markets. This finding is echoed in the literature (see for instance @cerutti_push_2015) and underscores South Africa's role as destination for return-seeking investors. Financial market spillovers from the MBS and money markets are least significant --- an important result given that the measurement period includes the global financial crisis, which originated in the US MBS market. The financial crisis appears to have impacted South African financial markets primarily through higher risk asset classes. 
+
+As is to be expected, the volatility spillover is generally strongest within asset classes such that spillovers from global equities are most strongly observed in South African equities etc. Indeed, a slight dampening effect from equities and real estate to South African bond and money market securities is observed, indicating a mild complementarity between the asset classes. An unambiguous dampending effect of the asset classes (especially equities and real estate) on the Rand currency pairs emerges. This result indicates the important role of the Rand in transmitting spillovers, however the directionality warrants a nuanced exploration, a detailed treatment of which is postponed to a later article^[A possible explanation is an inverse relationship between developed market volatility and emerging market asset allocations, such that a decline in US equity volatility, for instance, causes increased US allocations and a withdrawal of Rand-denominated assets.]. 
+
+## Regional dimension
+
+Across asset classes, regional spillover patterns ascribe an important role to US and UK financial markets. This is unsurprising given their relative size and global importance. A distinct linkage between UK and South African bond and money markets exists, however these linkages are limited to the market pairs, with no significant real effects. Exposure to Chinese markets is generally observed to be lowest.
+
+## Real Economy
+
+Spillovers to real economic variables and bond and equity flows (classified under "Economy" in Figure 1) are quantitatively far lower, but significant. Industrial production and investment flows exhibit the strongest vulnerability to equity, bond and real estate markets. The quantitatively high exposure of inflation to US short-term interest rates (money market) may indicate a strong linkage to US monetary policy, as posited by @rey_dilemma_2015. US MBS volatility is reflected strongly in inflation, trade balance and bond flows. This is likely a direct result of the financial crisis. The fact that the US MBS market affected economic variables more significantly than financial markets during the crisis is a curious fact, and underscores the distinctive role of South Africa in global strategic asset allocations.
+
+## QE / Tapering
+
+The Fed and ECB's balance sheets exhibit large and sweeping effects across South African assets and economic variables. Equities and currency pairs (primarily USD:ZAR and EUR:ZAR) are affected most significantly. Strong real spillovers are observed in industrial production, the trade balance as well as in portfolio flows. The inverse volatility effect on investment flows and equity aligns well with the findings of @apostolou_volatility_2017 and is a likely result of risk spillovers during the so-called _taper tantrum_, with increased market volatility as FED volatility decreased. Indeed, Figure 2, which plots the spillover strength over time, demonstrates the strong effect of tapering on equity flows and equity prices particularly^[$I_t$ represents an index capturing the percentage of domestic volatility explained by source volatility over time. The formula is: $I_t = \frac{\phi^2 \sigma^2_{dev,t}}{\sigma^2_{sa,t} + \phi^2 \sigma^2_{dev,t}}$]. The plot of $I_t$ is calculated on a log-scale due to the large effect of the financial crisis. Generally, the impact of US quantitative easing is substantially larger than the ECB's expansionary programs.
+
+```{r, fig.align='center', fig.cap="FED and ECB Quantitative Easing Spillovers ($I_t$ (log scale)) \\label{fig_cb}", fig.width=6, fig.height=6, fig.pos="H"}
+multiplot(cb.plot.1, cb.plot.2,cb.plot.3,cb.plot.4, cols = 2, wid = c(1,1), hei = c(3.5,3.5))
+```
+
+# Conclusion
+
+The article sets out to characterise the South African global asset exposure relative to key financial centers. While the method chosen is somewhat ambitious in the limited setting, it allows for the delineation of 4 clear high-level trends. The findings place South Africa within the broader emerging market investment theme of primary exposure in high-risk asset classes such as equity and real estate. An important role is played by the US and UK markets, as well as the Fed and ECB's quantitative easing programs. 
+
+The research provides significant scope for additional development. An interesting follow-on question is the comparison of the South African case to the exposure matrices of other emerging markets, in order to highlight any particularities of the domestic financial system. Various interesting relationships in the exposure matrix warrant further exploration that is beyond the scope of this paper, particularly the role played by the Rand exchange rate pairs. Finally, the temporal dimension has only been explored in a limited manner to demonstrate the effect of the financial crisis, with substantial remaining avenues left unexplored. I plan to publish a series of additional brief articles exploring some of the more detailed dimensions of the relationships found here.
+
+# References {-}
+
+
+
+
+
+

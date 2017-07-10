@@ -1,0 +1,88 @@
+﻿\documentclass[$if(fontsize)$$fontsize$,$endif$$if(lang)$$lang$,$endif$$if(papersize)$$papersize$,$endif$$for(classoption)$$classoption$$sep$,$endfor$preprint, authoryear, fleqn]{$documentclass$}
+
+%TC:newcounter fnotes
+%TC:macro \footnote [fnotes]
+
+%\usepackage{lmodern}
+\usepackage{fullpage}
+\usepackage{float}
+%\usepackage[titletoc]{appendix}
+\usepackage{graphicx}
+\usepackage{pdflscape}
+\usepackage[utf8]{inputenc}
+%\usepackage[T1]{fontenc}
+\usepackage{amsmath}
+\def\tightlist{}
+\usepackage{setspace}
+$if(linestretch)$
+\setstretch{$linestretch$}
+$endif$
+
+\usepackage{hyperref}
+\usepackage[all]{hypcap}
+\hypersetup{breaklinks=true,
+            bookmarks=true,
+            colorlinks=true,
+            citecolor=blue,
+            urlcolor=blue,
+            linkcolor=blue,
+            pdfborder={0 0 0}}
+
+\usepackage[backend=bibtex, style=authoryear]{biblatex}
+
+\addbibresource{$bibliography$}
+%\usepackage[round]{natbib}
+%\bibliographystyle{natbib}
+%\def\bibsection{\section*{References}}					
+
+\begin{document}
+
+\title{$title$}
+\author{$author$}
+
+\begin{titlepage}
+
+\maketitle
+
+\vfill\noindent
+\begin{tabular}[t]{@{}l} 
+  $BottomSubject$
+\end{tabular}
+\hfill% move it to the right
+\begin{tabular}[t]{l@{}}
+\end{tabular}
+
+\end{titlepage}
+
+$if(abstract)$
+\begin{abstract}
+\small{
+$abstract$
+}
+\end{abstract}
+$endif$
+
+\pagebreak
+
+$if(toc)$
+\renewcommand{\contentsname}{Table of Contents}
+{\tableofcontents}
+$endif$
+
+$if(lot)$
+\listoftables
+$endif$
+$if(lof)$
+\listoffigures
+$endif$
+
+\pagebreak
+
+$body$
+
+%\nocite{*}
+%\bibliography{}
+
+
+
+\end{document}

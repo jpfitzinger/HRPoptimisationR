@@ -59,7 +59,7 @@
       p <- optFx(rets, calc_int = 252, rebal_per = "months")  # Computes all methods
       p <- optFx(rets, calc_int = 252, rebal_per = "months", methods = c("HRP","MVO","minVar","invVar","Equal"))  # Primary methods
       p <- optFx(rets, calc_int = 252, rebal_per = "months", methods = c("HRP","rHRP"))   # HRP comparison to robust
-      p <- optFx(rets, calc_int = 252, rebal_per = "months", methods = c("HRP","MVO"))   # HRP comparison to robust and MVO
+      p <- optFx(rets, calc_int = 252, rebal_per = "months", methods = c("HRP","cHRP","MVO","cMVO"))   # HRP comparison to robust and MVO
   
 #--------------------------------------------------------------------------
 # Plots to replicate Thomas Wiecki (Python code)

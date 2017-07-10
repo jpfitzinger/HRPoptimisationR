@@ -11,82 +11,65 @@
 # Hierarchical Risk Parity (by LdP)
 #--------------------------------------------------------------------------
 
-      getHRP <- function(cov, corr, max = NULL, min = NULL, return_raw = NULL, robust_cov = F) {
+      getClusterVar <- function(cov, cItems) {
+        # Compute variance per cluster
+        cov <- cov[cItems,cItems]
+        if (length(cItems)>1) {
+          ivp <- 1 / diag(cov)
+          ivp <- ivp / sum(ivp)
+          w <- ivp
+          cVar <- crossprod(t(t(w)%*%cov),w)
+        } else {
+          cVar <- cov
+        }
+        return(cVar)
+      }
+      getRecBipart <- function(cov, sortIx) {
+        w <- matrix(1, length(sortIx),1)
+        w <- data.frame(w, row.names = sortIx)
+        cItems <- list(sortIx)
+        while (length(cItems) > 0) {
+          cItemsNew <- vector("list",length(cItems)*2)
+          for (i in 1:length(cItems)) {
+            if (length(cItems[[i]])>1) {
+              items <- cItems[[i]]
+              cItems1 <- items[1:floor(length(items)/2)]
+              cItems2 <- items[ceiling((length(items)+1)/2):length(items)]
+              cVar1 <- getClusterVar(cov, cItems1)
+              cVar2 <- getClusterVar(cov, cItems2)
+              alpha <- 1 - cVar1 / (cVar1 + cVar2)
+              w[cItems1,] <- w[cItems1,] * as.numeric(alpha)
+              w[cItems2,] <- w[cItems2,] * as.numeric(1-alpha)
+              cItemsNew[[i*2-1]] <- cItems1
+              cItemsNew[[i*2]] <- cItems2
+            }
+          }
+          cItemsNew <- cItemsNew[as.logical(1-unlist(lapply(cItemsNew,is.null)))]
+          cItems <- cItemsNew
+        }
+        return(w)
+      }
+      correlDist <- function(corr) {
+        # A distance matrix based on correlation, where 0<=d[i,j]<=1
+        # This is a proper distance metric
+        dist = ((1 - corr) / 2)^0.5  # distance matrix
+        return(dist)
+      }
+      
+      # Generates matrix of weights:
+      getHRP <- function(cov, corr, return_raw = NULL, robust_cov = F) {
         # Construct a hierarchical portfolio
         if (robust_cov == T) {
           cov <- cov_shrink(return_raw)
           corr <- cov2cor(cov)
         }
-        
-        # Set the constraint matrix
-        if (is.null(max)) max <- rep(1,ncol(cov))
-        if (is.null(min)) min <- rep(0,ncol(cov))
-        if (length(max)==1) max <- rep(max,ncol(cov)) else if (length(max)<ncol(cov)) stop("Provide correct weights")
-        if (length(min)==1) min <- rep(min,ncol(cov)) else if (length(min)<ncol(cov)) stop("Provide correct weights")
-        const <- rbind(max, min)
-        
-        # check constraints
-        if (sum(const[1,]) < 1 | sum(const[2,]) > 1) stop("Incompatible weights")
-        
-        distmat <- ((1 - corr) / 2)^0.5
-        clustOrder <- hclust(dist(distmat), method = 'single')$order
-        out <- getRecBipart(cov, clustOrder, const)
-        return(out)
+        dist <- correlDist(corr)
+        link <- hclust(dist(dist), method = "single")
+        sortIx <- names(corr[,1])[link$order]
+        hrp <- getRecBipart(cov, sortIx)
+        return(hrp[colnames(rets),])
       }
-      
-      getClusterVar <- function(cov, cItems) {
-        # compute cluster variance from the inverse variance portfolio above
-        covSlice <- cov[cItems, cItems]
-        weights <- getIVP(covSlice)
-        cVar <- t(weights) %*% as.matrix(covSlice) %*% weights
-        return(cVar)
-      }
-      
-      getRecBipart <- function(cov, sortIx, const) {
-        
-        w <- rep(1, ncol(cov))
-        
-        # create recursion function within parent function to avoid use of globalenv
-        recurFun <- function(cov, sortIx, const) {
-          # get first half of sortIx which is a cluster order
-          subIdx <- 1:trunc(length(sortIx)/2)
-          
-          # subdivide ordering into first half and second half
-          cItems0 <- sortIx[subIdx]
-          cItems1 <- sortIx[-subIdx]
-          
-          # compute cluster variances of covariance matrices indexed
-          # on first half and second half of ordering
-          cVar0 <- getClusterVar(cov, cItems0)
-          cVar1 <- getClusterVar(cov, cItems1)
-          alpha <- 1 - cVar0/(cVar0 + cVar1)
-          
-          # determining whether weight constraint binds
-          alpha <- min(sum(const[1,cItems0]) / w[cItems0[1]],
-                       max(sum(const[2,cItems0]) / w[cItems0[1]], 
-                           alpha))
-          alpha <- 1 - min(sum(const[1,cItems1]) / w[cItems1[1]], 
-                           max(sum(const[2,cItems1]) / w[cItems1[1]], 
-                               1 - alpha))
-          
-          w[cItems0] <<- w[cItems0] * rep(alpha, length(cItems0))
-          w[cItems1] <<- w[cItems1] * rep((1-alpha), length(cItems1))
-          
-          # rerun the function on a half if the length of that half is greater than 1
-          if(length(cItems0) > 1) {
-            recurFun(cov, cItems0, const)
-          }
-          if(length(cItems1) > 1) {
-            recurFun(cov, cItems1, const)
-          }
-          
-        }
-        
-        # run recursion function
-        recurFun(cov, sortIx, const)
-        return(w)
-      }
-      
+
 #--------------------------------------------------------------------------
 # Mean-Variance Efficient Portfolio
 #--------------------------------------------------------------------------
@@ -138,7 +121,7 @@
         if (robust_cov == T) {
           cov <- cov_shrink(return_raw)
         }
-        ivp <- 1 / diag(as.matrix(cov))
+        ivp <- 1 / diag(cov)
         ivp <- ivp / sum(ivp)
         return(ivp)
       }
